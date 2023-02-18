@@ -4,7 +4,7 @@
 
 # NeosVRMImporter
 
-A [NeosModLoader](https://github.com/zkxs/NeosModLoader) mod for [Neos VR](https://neos.com/) that enables import of VRM file (`.vrm`)
+A [NeosModLoader](https://github.com/zkxs/NeosModLoader) mod for [Neos VR](https://neos.com/) that enables import of [VRM](https://vrm.dev/) file (`.vrm`)
 
 Blender 3.0 or higher version is required.
 
@@ -27,7 +27,7 @@ Uses:
 
 # NeosVRMImporter
 
-VRMファイル(`.vrm`)を[Neos VR](https://neos.com/)にインポートできるようにするMod([NeosModLoader](https://github.com/zkxs/NeosModLoader) Mod)です．  
+[VRM](https://vrm.dev/)ファイル(`.vrm`)を[Neos VR](https://neos.com/)にインポートできるようにするMod([NeosModLoader](https://github.com/zkxs/NeosModLoader) Mod)です．  
 Blender 3.0以上が必要です．
 
 ## インストール
