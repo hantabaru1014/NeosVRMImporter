@@ -34,6 +34,9 @@
     <Reference Include="BaseX">
       <HintPath>$(NeosPath)Neos_Data\Managed\BaseX.dll</HintPath>
     </Reference>
+    <Reference Include="Newtonsoft.Json">
+      <HintPath>$(NeosPath)Neos_Data\Managed\Newtonsoft.Json.dll</HintPath>
+    </Reference>
   </ItemGroup>
 
   <Target Name="PostBuild" AfterTargets="PostBuildEvent" Condition="'$(CopyToMods)'=='true'">

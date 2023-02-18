@@ -3,7 +3,6 @@ using CodeX;
 using FrooxEngine;
 using HarmonyLib;
 using NeosModLoader;
-using System;
 using System.Collections.Generic;
 using System.IO;
 using System.Threading.Tasks;
@@ -17,13 +16,20 @@ namespace NeosVRMImporter
         public override string Version => "1.0.0";
         public override string Link => "https://github.com/hantabaru1014/NeosVRMImporter";
 
-        private static readonly string CACHE_PATH = Path.Combine(Engine.Current.CachePath, "Cache");
+        [AutoRegisterConfigKey]
+        public static readonly ModConfigurationKey<bool> RenameOnlyConvertKey =
+            new ModConfigurationKey<bool>("RenameOnlyConvert", "Convert only by changing the extension from vrm to glb (for VRM1.0)", () => false);
+
+        private static ModConfiguration? _config;
 
         public override void OnEngineInit()
         {
+            _config = GetConfiguration();
             Harmony harmony = new Harmony("dev.baru.neos.NeosVRMImporter");
             harmony.PatchAll();
             Engine.Current.RunPostInit(PatchAssetHelper);
+            _ = VRM2GLB.UpdateTools();
+            Msg($"Blender Path: {VRM2GLB.BLENDER_EXE_PATH}");
         }
 
         private static void PatchAssetHelper()
@@ -34,24 +40,6 @@ namespace NeosVRMImporter
         private static bool IsVRMFile(string path)
         {
             return Path.GetExtension(path).ToLower() == ".vrm";
-        }
-
-        private static bool TryVRMToGLB(string vrmPath, out string glbPath)
-        {
-            var hash = Utils.GenerateMD5(vrmPath);
-            var newPath = Path.Combine(CACHE_PATH, $"{hash}.glb");
-            glbPath = newPath;
-            try
-            {
-                File.Copy(vrmPath, newPath, true);
-            }
-            catch (Exception ex)
-            {
-                Error($"Failed to convert vrm to glb: {ex.Message}");
-                return false;
-            }
-            Msg($"Converted: {newPath}");
-            return true;
         }
 
         [HarmonyPatch(typeof(ModelImporter))]
@@ -68,9 +56,10 @@ namespace NeosVRMImporter
                 Msg($"Importing VRM: {file}");
                 var tcs = new TaskCompletionSource<bool>();
                 progressIndicator.UpdateProgress(0, "Converting vrm to glb", "");
-                Task.Run(() =>
+                Task.Run(async () =>
                 {
-                    if (TryVRMToGLB(file, out var glbPath))
+                    var glbPath = _config?.GetValue(RenameOnlyConvertKey) ?? false ? VRM2GLB.RenameVRMtoGLB(file) : await VRM2GLB.ConvertVRMtoGLB(file);
+                    if (glbPath != null)
                     {
                         var wrapperMethod = AccessTools.Method(typeof(ModelImporter), "ImportModelWrapper");
                         targetSlot.RunSynchronously(() =>
