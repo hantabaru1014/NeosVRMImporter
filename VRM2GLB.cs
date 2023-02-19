@@ -11,7 +11,7 @@ namespace NeosVRMImporter
     {
         public static readonly string CONV_TOOL_PATH = Path.Combine(Utils.MOD_WORKING_DIRECTORY, "vrmtoglb_autoconvert");
         public static readonly string BLENDER_ADDON_PATH = Path.Combine(Utils.MOD_WORKING_DIRECTORY, "VRM_Addon_for_Blender.zip");
-        public static readonly string? BLENDER_EXE_PATH = Path.Combine(Utils.GetInstalledPath("blender"), "blender.exe");
+        public static readonly string BLENDER_EXE_PATH = Utils.GetBlenderPath();
 
         private const string CONV_TOOL_REPO_OWNER = "kazu0617";
         private const string CONV_TOOL_REPO_NAME = "vrmtoglb_autoconvert";
@@ -35,7 +35,7 @@ namespace NeosVRMImporter
             }
             ZipFile.ExtractToDirectory(dlPath, CONV_TOOL_PATH);
             Utils.WriteDownloadedVersion(CONV_TOOL_REPO_OWNER, CONV_TOOL_REPO_NAME, repoInfo.LatestVersion);
-            if (Directory.GetDirectories(CONV_TOOL_PATH).Length == 1)
+            if (!File.Exists(Path.Combine(CONV_TOOL_PATH, "vrmconv.py")) && Directory.GetDirectories(CONV_TOOL_PATH).Length == 1)
             {
                 Directory.Move(CONV_TOOL_PATH, CONV_TOOL_PATH + "2");
                 Directory.Move(Directory.GetDirectories(CONV_TOOL_PATH + "2")[0], CONV_TOOL_PATH);
@@ -71,11 +71,21 @@ namespace NeosVRMImporter
         public static async Task<string?> ConvertVRMtoGLB(string path)
         {
             if (!IsReadyToConvert()) return null;
-            var outPath = Path.Combine(Utils.MOD_WORKING_DIRECTORY, Guid.NewGuid().ToString().Replace("-", "") + ".glb");
+            var id = Guid.NewGuid().ToString().Replace("-", "");
+            var tmpPath = Path.Combine(Utils.MOD_WORKING_DIRECTORY, id + ".vrm");
+            try
+            {
+                File.Copy(path, tmpPath);
+            }
+            catch
+            {
+                return null;
+            }
+            var outPath = Path.Combine(Utils.MOD_WORKING_DIRECTORY, id + ".glb");
 
             using var proc = new Process();
             proc.StartInfo.FileName = BLENDER_EXE_PATH;
-            proc.StartInfo.Arguments = $"\"{Path.Combine(CONV_TOOL_PATH, "empty.blend")}\" --python \"{Path.Combine(CONV_TOOL_PATH, "vrmconv.py")}\" --background -- --input \"{path}\" --output \"{outPath}\" --addonfile \"{BLENDER_ADDON_PATH}\"";
+            proc.StartInfo.Arguments = $"\"{Path.Combine(CONV_TOOL_PATH, "empty.blend")}\" --python \"{Path.Combine(CONV_TOOL_PATH, "vrmconv.py")}\" --background -- --input \"{tmpPath}\" --output \"{outPath}\" --addonfile \"{BLENDER_ADDON_PATH}\"";
             proc.StartInfo.WorkingDirectory = Utils.MOD_WORKING_DIRECTORY;
             proc.StartInfo.UseShellExecute = false;
             proc.StartInfo.CreateNoWindow = true;

@@ -76,5 +76,23 @@ namespace NeosVRMImporter
 
             return null;
         }
+
+        public static string GetBlenderPath()
+        {
+            var inToolsPath = Path.Combine(Engine.Current.AppPath, "Tools", "Blender", "blender.exe");
+            if (File.Exists(inToolsPath))
+            {
+                return inToolsPath;
+            }
+            var installedPath = GetInstalledPath("blender");
+            if (string.IsNullOrEmpty(installedPath))
+            {
+                return string.Empty;
+            }
+            else
+            {
+                return Path.Combine(installedPath, "blender.exe");
+            }
+        }
     }
 }

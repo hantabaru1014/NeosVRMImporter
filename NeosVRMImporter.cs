@@ -5,6 +5,7 @@ using HarmonyLib;
 using NeosModLoader;
 using System.Collections.Generic;
 using System.IO;
+using System.Linq;
 using System.Threading.Tasks;
 
 namespace NeosVRMImporter
@@ -19,6 +20,9 @@ namespace NeosVRMImporter
         [AutoRegisterConfigKey]
         public static readonly ModConfigurationKey<bool> RenameOnlyConvertKey =
             new ModConfigurationKey<bool>("RenameOnlyConvert", "Convert only by changing the extension from vrm to glb (for VRM1.0)", () => false);
+        [AutoRegisterConfigKey]
+        public static readonly ModConfigurationKey<bool> ImportTexturesKey =
+            new ModConfigurationKey<bool>("ImportTextures", "Import all textures included in VRM separately from the model", () => false);
 
         private static ModConfiguration? _config;
 
@@ -61,11 +65,19 @@ namespace NeosVRMImporter
                     var glbPath = _config?.GetValue(RenameOnlyConvertKey) ?? false ? VRM2GLB.RenameVRMtoGLB(file) : await VRM2GLB.ConvertVRMtoGLB(file);
                     if (glbPath != null)
                     {
+                        Msg($"Converted: {glbPath}");
                         var wrapperMethod = AccessTools.Method(typeof(ModelImporter), "ImportModelWrapper");
                         targetSlot.RunSynchronously(() =>
                         {
                             targetSlot.StartCoroutine((IEnumerator<Context>)wrapperMethod.Invoke(null, new object[] { glbPath, targetSlot, settings, assetsSlot, progressIndicator, tcs }));
                         }, true);
+                        var texDirPath = glbPath.Substring(0, glbPath.Length - 4) + ".vrm.textures";
+                        if (_config?.GetValue(ImportTexturesKey) ?? false && Directory.Exists(texDirPath))
+                        {
+                            Msg($"Found textures to import: {texDirPath}");
+                            var texPaths = Directory.GetFiles(texDirPath).Where(f => AssetHelper.IdentifyClass(f) == AssetClass.Texture);
+                            UniversalImporter.Import(AssetClass.Texture, texPaths, targetSlot.World, targetSlot.GlobalPosition, targetSlot.GlobalRotation, true);
+                        }
                     }
                     else
                     {
